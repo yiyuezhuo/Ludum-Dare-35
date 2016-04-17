@@ -47,7 +47,7 @@ d3.range(0,20,0.1).forEach(function(i){
 })
 */
 
-var fixPointData=fixPointDataDict['upper'];
+var fixPointData=fixPointDataDict['massive'];
 
 function locCircle(selection){
 	return selection.attr('cx',function(d){
