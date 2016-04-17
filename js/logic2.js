@@ -27,12 +27,17 @@ function distance(x1,y1,x2,y2){
 	return Math.sqrt(Math.pow(x1-x2,2)+Math.pow(y1-y2,2));
 }
 
+/*
 function field_inverse(field){
 	function _field(x,y){
 		var xy=field(x,y);
 		return [-xy[0],-xy[1]];
 	}
 	return _field
+}
+*/
+function field_inverse(field){
+	return field.inverse();
 }
 
 
@@ -118,10 +123,25 @@ function moveDataStep(data,K,field){
 	
 	K=K || 1;
 	
-	return data.map(function(d){
-		var dxy=field(d[0],d[1]);
-		return [d[0]+dxy[0]*K,d[1]+dxy[1]*K];
+	var newData=data.map(function(d){
+		var nxy=field.get(d[0],d[1]);
+		if (nxy){
+			console.log('use cache');
+			return nxy;
+		}
+		else{
+			var dxy=field(d[0],d[1]);
+			var nxy=[d[0]+dxy[0]*K,d[1]+dxy[1]*K];
+			field.setCacheForward(d,nxy);
+			field.setCacheBackward(nxy,d);
+			return nxy;
+		}
+		
+		//field.setCacheBackward(nxy,[-dxy[0],-dxy[1]]);
+		//return nxy;
 	});
+	
+	return newData;
 }
 
 function moveSVGStep(newData,duration){
@@ -261,7 +281,120 @@ function argBox(arg,selection){
 }
 
 //arg_getter=argBox({k:3,m:2},d3.select('#argField'))
+/*
+function fieldAbs(args,fieldFamily){
+	function _fieldAbs(selection){
+		
+		var argsGetter=argBox(args,selection);
+		
+		function fieldGetter(){
+			fieldFamily(argsGetter());
+		}
+		
+		return fieldGetter;
+	}
+}
+*/
+/*
+var codeKeyCut=5;
 
+function codeKey(x,y,args){
+	// [1.11111111111,2.2222222222,3.33333333]->[1.111,2.222,3.333] ugly hack for float error and hash bug
+	var list=[x,y].concat(args);
+	return list.map(function(d){return String(d).slice(0,codeKeyCut)});
+}
+*/
+
+function fieldAbc(argsList,argsConfig,func){
+	// argsList : ['k','b']
+	// argsConfig : {k:{value:2,min:1,max:10,step:1},...}
+	// func (x,y,arg) -> (dx,dy)
+	function _fieldAbs(selection){
+		var cacheForward={}; // (x,y,arg1,arg2,...) -> newX,newY (not dx,dy)
+		var cacheBackward={};
+		var argsGetter=argBox(argsConfig,selection);
+		
+		function fieldGetter(){
+			var argsDict=argsGetter(); //argsDict={k:{value:2,min:1,...},...}
+			var args=argsList.map(function(key){return argsDict[key].value}); // args=[1,10,3,...] (argsList order)
+			function _field(x,y){
+				//var key=codeKey(x,y,args);
+				/*
+				var key=[x,y]+','+args;
+				if(cacheForward[key]){
+					//console.log('use forward cache');
+					return cacheForward[key];
+				}
+				else{
+					var dxy=func(x,y,argsDict);
+					//cacheForward[key]=dxy;
+					return dxy;
+				}
+				*/
+				return func(x,y,argsDict);
+			}
+			function _field_I(x,y){
+				//var key=codeKey(x,y,args);
+				/*
+				var key=[x,y]+','+args;
+				if(cacheBackward[key]){
+					console.log('use backward cache');
+					return cacheBackward[key];
+				}
+				else{
+					var dxy=func(x,y,argsDict);
+					cacheBackward[key]=[-dxy[0],-dxy[1]];
+					return [-dxy[0],-dxy[1]];
+				}
+				*/
+				var dxy=func(x,y,argsDict);
+				return [-dxy[0],-dxy[1]];
+			}
+			
+			function inverseAbs(__field){
+				return function(){
+					return __field;
+				};
+			}
+			function getAbs(cache){
+				// this return new loc direct and maintain cache
+				function _get(x,y){
+					var key=[x,y]+','+args;
+					if(cache[key]){
+						return cache[key];
+					}
+					return undefined;
+				}
+				return _get;
+			}
+			function setCacheAbs(cache){
+				function setCache(xy,value){
+					cache[xy+','+args]=value;
+				}
+				return setCache;
+			}
+			
+			_field.inverse=inverseAbs(_field_I);
+			_field.get=getAbs(cacheForward);
+			_field.setCacheForward=setCacheAbs(cacheForward);
+			_field.setCacheForward=setCacheAbs(cacheBackward);
+
+			_field_I.inverse=inverseAbs(_field);
+			_field_I.get=getAbs(cacheBackward);
+			_field_I.setCacheForward=setCacheAbs(cacheBackward);
+			_field_I.setCacheForward=setCacheAbs(cacheForward);
+		return fieldGetter;
+	}
+	return _fieldAbs;
+}
+
+var field1=fieldAbc(['k'],
+							{k:{value:2,min:0,max:10,step:1}},
+							function(x,y,args){
+								var k=args['k'].value;
+								return [k*Math.sin(y),0];
+							});
+/*
 function field1(selection){
 	var args={k:{value:2,min:0,max:10,step:1}};
 	
@@ -282,7 +415,15 @@ function field1(selection){
 	
 	return _field;
 }
+*/
+var field2=fieldAbc(['k'],
+							{k:{value:2,min:0,max:10,step:1}},
+							function(x,y,args){
+								var k=args['k'].value;
+								return [k*Math.sin(y),Math.sin(k*x)];
+							});
 
+/*
 function field2(selection){
 	var args={k:{value:2,min:0,max:10,step:1}};
 	
@@ -303,7 +444,16 @@ function field2(selection){
 	
 	return _field;
 }
+*/
 
+var field3=fieldAbc(['k'],
+							{k:{value:2,min:0,max:10,step:1}},
+							function(x,y,args){
+								var k=args['k'].value;
+								return [x*y,x+y];
+							});
+
+/*
 function field3(selection){
 	var args={k:{value:2,min:0,max:10,step:1}};
 	
@@ -324,7 +474,7 @@ function field3(selection){
 	
 	return _field;
 }
-
+*/
 
 
 function stageParent(fieldGetter,realArg){
@@ -485,8 +635,8 @@ function stage1(fieldGetter,realArg){
 		return points;
 	}
 	
-	var K=0.05;
-	var duration=50;
+	var K=0.2;
+	var duration=200;
 
 	return stageParent(fieldGetter,realArg)({pointsInit:pointsInit,K:K,duration:duration});
 }
