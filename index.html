@@ -1,20 +1,51 @@
-<!DOCTYPE html>
+<!DOCTYPE  html>
 <html>
 	<head>
-		<title>shapeshft</title>
 		<meta charset="utf-8">
 		<script src="js/d3.js"></script>
-		<link rel="stylesheet" type="text/css" href="css/styles.css"/>
+		<script src="static/b.js"></script>
+		<script src="static/chiken.js"></script>
+		<link rel="stylesheet" text="text/css" href="css/styles.css">
 	</head>
 	<body>
-		<svg id="svg"></svg>
+		<audio src="static/func.ogg" id="audioDoom"></audio>
+		<div id="welcomePage" class="page" style='width:400px;'>
+			<h1>shape shift</h1>
+			Oh,Why I am shift to weird shape by field! No, resume me to 
+			orignal shape please...
+			<p><button id="buttonStartGame">start game</button></p>
+		</div>
+		<div id="victoryPage" class="page">
+			<h1>Victory!</h1>
+			<p>Excellent, you win the boring game, thank you and wish I'm not waste your time :)</p>
+			<button id="buttonReturn">music</button>
+			<p>by yiyuezhuo</p>
+		</div>
+		<div id="jumpPage" class="page">
+			<h1>Correct!</h1>
+			<button id="buttonNextStage">next stage</button>
+		</div>
+		<div id="gamePage" class="page" style="width:600px;">
+			<div id="gamePageHeader"></div>
+			<svg></svg>
+			<div id="argField">
+			</div>
+			<div id="otherField">
+				<!-- time<input type="range" id="timeInput" value='0' min="-10" max="10" step="1"> -->
+				time<input type="range" id="timeInput">
+				<!-- <button id="buttonRun">run!</button> -->
+				<button id="buttonPlotStream">plot stream</button>
+				<button id="buttonHideStream">hide stream</button>
+				<button id="buttonShowGoal">show goal</button>
+				<button id="buttonHideGoal">hide goal</button>
+				<button id="buttonReset">reset</button>
+				<p>error:<span id="errorText"></span></p>
+			</div>
+		</div>
+		<div id="flashDialog" class="dialog">
+			<p id="flashContent"></p>
+			<button id="flashButton">I see</button>
+		</dialog>
 	</body>
-	<div id="testField">
-		<button id="testButton">test</button>
-		<input type="text" value="sin(x)" id="inputFormula"><br>
-		<button id='buttonApply'>apply</button>
-		<button id="runPoint">run!</button>
-	</div>
-	<script src="js/fixPointData.js"></script>
-	<script src="js/logic.js"></script>
-</html>
+	<script src="js/logic2.js"></script>
+</htmk>
