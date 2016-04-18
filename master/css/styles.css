@@ -1,0 +1,36 @@
+.axis path, .axis line {
+    fill: none;
+    stroke: #000;
+    shape-rendering: crispEdges;
+}
+
+.axis text {
+    font: 10px sans-serif;
+}
+
+.axis .grid-line{
+    stroke: black;
+    shape-rendering: crispEdges;
+    stroke-opacity: .2;
+}
+
+.line{
+    fill: none;    
+    stroke: steelblue;
+    stroke-width: 2;
+}
+
+.page{
+	width:400px;
+	margin-left:auto; 
+	margin-right:auto;
+	display:none;
+}
+
+.dialog{
+	width:300px;
+	display:none;
+	background-color:rgb(220,220,220);
+	position:fixed;
+	top:100px;
+}
