@@ -1,8 +1,8 @@
 
 var svg=d3.select('svg');
 
-var svg_width=500;
-var svg_height=500;
+var svg_width=400;
+var svg_height=400;
 
 svg.attr('width',svg_width).attr('height',svg_height);
 var pointGroup=svg.append('g').classed('points',true);
@@ -25,6 +25,14 @@ function test_field2(x,y){
 */
 function distance(x1,y1,x2,y2){
 	return Math.sqrt(Math.pow(x1-x2,2)+Math.pow(y1-y2,2));
+}
+
+function setRange(selection,dic){
+	var dom=selection[0][0];
+	dom.value=dic['value'];
+	dom.min=dic['min'];
+	dom.max=dic['max'];
+	dom.step=dic['step'];
 }
 
 /*
@@ -158,7 +166,7 @@ function runToEnd(func,pred,time,endCallback){
 		if (pred()) {
 			clearInterval(label);
 			if (endCallback){
-				endCallback();
+				setTimeout(endCallback,time*2);
 			}
 		};
 	}
@@ -280,30 +288,8 @@ function argBox(arg,selection){
 	return _getter;
 }
 
-//arg_getter=argBox({k:3,m:2},d3.select('#argField'))
-/*
-function fieldAbs(args,fieldFamily){
-	function _fieldAbs(selection){
-		
-		var argsGetter=argBox(args,selection);
-		
-		function fieldGetter(){
-			fieldFamily(argsGetter());
-		}
-		
-		return fieldGetter;
-	}
-}
-*/
-/*
-var codeKeyCut=5;
 
-function codeKey(x,y,args){
-	// [1.11111111111,2.2222222222,3.33333333]->[1.111,2.222,3.333] ugly hack for float error and hash bug
-	var list=[x,y].concat(args);
-	return list.map(function(d){return String(d).slice(0,codeKeyCut)});
-}
-*/
+
 
 function fieldAbc(argsList,argsConfig,func){
 	// argsList : ['k','b']
@@ -314,39 +300,13 @@ function fieldAbc(argsList,argsConfig,func){
 		var cacheBackward={};
 		var argsGetter=argBox(argsConfig,selection);
 		
-		function fieldGetter(){
-			var argsDict=argsGetter(); //argsDict={k:{value:2,min:1,...},...}
+		function fieldGetter(argsDict){
+			var argsDict=argsDict || argsGetter(); //argsDict={k:{value:2,min:1,...},...}
 			var args=argsList.map(function(key){return argsDict[key].value}); // args=[1,10,3,...] (argsList order)
 			function _field(x,y){
-				//var key=codeKey(x,y,args);
-				/*
-				var key=[x,y]+','+args;
-				if(cacheForward[key]){
-					//console.log('use forward cache');
-					return cacheForward[key];
-				}
-				else{
-					var dxy=func(x,y,argsDict);
-					//cacheForward[key]=dxy;
-					return dxy;
-				}
-				*/
 				return func(x,y,argsDict);
 			}
 			function _field_I(x,y){
-				//var key=codeKey(x,y,args);
-				/*
-				var key=[x,y]+','+args;
-				if(cacheBackward[key]){
-					console.log('use backward cache');
-					return cacheBackward[key];
-				}
-				else{
-					var dxy=func(x,y,argsDict);
-					cacheBackward[key]=[-dxy[0],-dxy[1]];
-					return [-dxy[0],-dxy[1]];
-				}
-				*/
 				var dxy=func(x,y,argsDict);
 				return [-dxy[0],-dxy[1]];
 			}
@@ -354,7 +314,7 @@ function fieldAbc(argsList,argsConfig,func){
 			function inverseAbs(__field){
 				return function(){
 					return __field;
-				};
+				}
 			}
 			function getAbs(cache){
 				// this return new loc direct and maintain cache
@@ -377,16 +337,20 @@ function fieldAbc(argsList,argsConfig,func){
 			_field.inverse=inverseAbs(_field_I);
 			_field.get=getAbs(cacheForward);
 			_field.setCacheForward=setCacheAbs(cacheForward);
-			_field.setCacheForward=setCacheAbs(cacheBackward);
+			_field.setCacheBackward=setCacheAbs(cacheBackward);
 
 			_field_I.inverse=inverseAbs(_field);
 			_field_I.get=getAbs(cacheBackward);
 			_field_I.setCacheForward=setCacheAbs(cacheBackward);
-			_field_I.setCacheForward=setCacheAbs(cacheForward);
+			_field_I.setCacheBackward=setCacheAbs(cacheForward);
+			
+			return _field;
+		}
 		return fieldGetter;
 	}
 	return _fieldAbs;
 }
+
 
 var field1=fieldAbc(['k'],
 							{k:{value:2,min:0,max:10,step:1}},
@@ -394,28 +358,7 @@ var field1=fieldAbc(['k'],
 								var k=args['k'].value;
 								return [k*Math.sin(y),0];
 							});
-/*
-function field1(selection){
-	var args={k:{value:2,min:0,max:10,step:1}};
-	
-	var argsGetter=argBox(args,selection);
-	
-	function fieldFamily(arg){
-		// it show how to process arg in argBox
-		var k=arg['k'].value;
-		function _field(x,y){
-			return [k*Math.sin(y),0];
-		}
-		return _field;
-	}
-	
-	function _field(){
-		return fieldFamily(argsGetter());
-	}
-	
-	return _field;
-}
-*/
+
 var field2=fieldAbc(['k'],
 							{k:{value:2,min:0,max:10,step:1}},
 							function(x,y,args){
@@ -423,58 +366,29 @@ var field2=fieldAbc(['k'],
 								return [k*Math.sin(y),Math.sin(k*x)];
 							});
 
-/*
-function field2(selection){
-	var args={k:{value:2,min:0,max:10,step:1}};
-	
-	var argsGetter=argBox(args,selection);
-	
-	function fieldFamily(arg){
-		// it show how to process arg in argBox
-		var k=arg['k'].value;
-		function _field(x,y){
-			return [k*Math.sin(y),Math.sin(k*x)];
-		}
-		return _field;
-	}
-	
-	function _field(){
-		return fieldFamily(argsGetter());
-	}
-	
-	return _field;
-}
-*/
-
 var field3=fieldAbc(['k'],
 							{k:{value:2,min:0,max:10,step:1}},
 							function(x,y,args){
 								var k=args['k'].value;
-								return [x*y,x+y];
+								return [x*y*k,x+y*k];
 							});
 
-/*
-function field3(selection){
-	var args={k:{value:2,min:0,max:10,step:1}};
-	
-	var argsGetter=argBox(args,selection);
-	
-	function fieldFamily(arg){
-		// it show how to process arg in argBox
-		var k=arg['k'].value;
-		function _field(x,y){
-			return [x*y,x+y];
-		}
-		return _field;
-	}
-	
-	function _field(){
-		return fieldFamily(argsGetter());
-	}
-	
-	return _field;
-}
-*/
+var field4=fieldAbc(['k'],
+							{k:{value:2,min:0,max:10,step:1}},
+							function(x,y,args){
+								var k=args['k'].value;
+								return [x*x*y,x*k-y];
+							});
+							
+var field5=fieldAbc(['k'],
+							{k:{value:2,min:0,max:10,step:1}},
+							function(x,y,args){
+								var k=args['k'].value;
+								return [x*Math.sin(y),Math.cos(x)*k+y*y];
+							});
+
+
+
 
 
 function stageParent(fieldGetter,realArg){
@@ -485,7 +399,7 @@ function stageParent(fieldGetter,realArg){
 	var heads;//heads is player looked point in the start
 	//var args={k:2};
 	var K=0.2,duration=100;
-	var realArg=realArg;
+	//var realArg=realArg;
 	
 	//argsGetter=argBox(args,selection);
 	
@@ -524,16 +438,6 @@ function stageParent(fieldGetter,realArg){
 			return points;
 	}
 	
-	/*
-	function fieldFamily(arg){
-			// it show how to process arg in argBox
-		var k=arg['k'];
-		function _field(x,y){
-			return [k*Math.sin(y),0];
-		}
-		return _field;
-	}
-	*/
 	
 	function run(dt,callback){
 		var field=fieldGetter();
@@ -587,7 +491,7 @@ function stageParent(fieldGetter,realArg){
 		var s=d3.sum(d3.zip(points,goals),function(point_goal){
 			var point=point_goal[0];
 			var goal=point_goal[1];
-			var d=distance(point[0],point[1],goal[0],goal[1]);
+			var d=distance(point[0],point[1],goal[0],goal[1])/points.length;
 			//console.log(point);
 			//console.log(goal);
 			//console.log(d);
@@ -641,6 +545,32 @@ function stage1(fieldGetter,realArg){
 	return stageParent(fieldGetter,realArg)({pointsInit:pointsInit,K:K,duration:duration});
 }
 
+function stage2(fieldGetter,realArg){
+	function pointsInit(){
+		// a circle consist of some circles
+		return bGraph;
+	}
+	
+	var K=0.2;
+	var duration=200;
+
+	return stageParent(fieldGetter,realArg)({pointsInit:pointsInit,K:K,duration:duration});
+}
+
+function stage3(fieldGetter,realArg){
+	function pointsInit(){
+		// a circle consist of some circles
+		return chikenGraph;
+	}
+	
+	var K=0.2;
+	var duration=200;
+
+	return stageParent(fieldGetter,realArg)({pointsInit:pointsInit,K:K,duration:duration});
+}
+
+
+
 function diffSlider(selection,callback){
 	lastValue=selection[0][0].value;
 	selection.on('change',function(){
@@ -650,97 +580,206 @@ function diffSlider(selection,callback){
 	})
 }
 
-function finalInit(initStage,initField,initArg){
+function gamePageInitConfig(passCallback){
+	function gamePageInit(initStage,initField,initArg){
 
-	var stage;
-	
-	/*
-	var initStage=initStage || stage1;
-	var initField=initField || field1;
-	var initArg=initArg || {k:{value:1}};
-	
-	
-	var run=stage.run;
-	var plot_stream=stage.plot_stream;
-	var plot_goal=stage.plot_goal;
-	var error=stage.error;
-	*/
-	
-	var argField=d3.select('#argField');
-	var timeInput=d3.select('#timeInput');
-	//var buttonRun=d3.select('#buttonRun');
-	var buttonPlotStream=d3.select('#buttonPlotStream');
-	var buttonHideStream=d3.select('#buttonHideStream');
-	var buttonShowGoal=d3.select('#buttonShowGoal');
-	var buttonHideGoal=d3.select('#buttonHideGoal');
-	var errorText=d3.select('#errorText');
-	var buttonReset=d3.select('#buttonReset');
-	
-	timeInput.attr('value',initArg['time']['value'])
-					.attr('min',initArg['time']['min'])
-					.attr('max',initArg['time']['max'])
-					.attr('step',initArg['time']['step']);
-	
-	
-	//buttonRun.on('click',function(){
-	//dtInput.on('drag',function(){
-	/*
-	buttonRun.on('click',function(){
-		var dt=Number(dtInput[0][0].value);
-		function callback(){
-			var err=stage.error();
-			errorText.text(err);
-		}
-		stage.run(dt,callback);
-		//console.log(fit);
-	});
-	*/
-	buttonPlotStream.on('click',function(){
-		stage.plot_stream();
-	});
-	buttonHideStream.on('click',function(){
-		stage.plot_stream([]);
-	});
-	buttonShowGoal.on('click',function(){
-		stage.plot_goal();
-	});
-	buttonHideGoal.on('click',function(){
-		stage.plot_goal([]);
-	})
-	buttonReset.on('click',function(){
-		stage.reset();
-	})
-	
-	diffSlider(timeInput,function(dt){
-		function callback(){
-			var err=stage.error();
-			errorText.text(err);
-		}
-		stage.run(dt,callback);		
-	})
+		var stage;
+		
+		/*
+		var initStage=initStage || stage1;
+		var initField=initField || field1;
+		var initArg=initArg || {k:{value:1}};
+		
+		
+		var run=stage.run;
+		var plot_stream=stage.plot_stream;
+		var plot_goal=stage.plot_goal;
+		var error=stage.error;
+		*/
+		
+		var argField=d3.select('#argField');
+		var timeInput=d3.select('#timeInput');
+		//var buttonRun=d3.select('#buttonRun');
+		var buttonPlotStream=d3.select('#buttonPlotStream');
+		var buttonHideStream=d3.select('#buttonHideStream');
+		var buttonShowGoal=d3.select('#buttonShowGoal');
+		var buttonHideGoal=d3.select('#buttonHideGoal');
+		var errorText=d3.select('#errorText');
+		var buttonReset=d3.select('#buttonReset');
+		
+		buttonPlotStream.on('click',function(){
+			stage.plot_stream();
+		});
+		buttonHideStream.on('click',function(){
+			stage.plot_stream([]);
+		});
+		buttonShowGoal.on('click',function(){
+			stage.plot_goal();
+		});
+		buttonHideGoal.on('click',function(){
+			stage.plot_goal([]);
+		})
+		buttonReset.on('click',function(){
+			stage.reset();
+		})
+		
+		
+		function setter(Stage,Field,realArg){
+			/*
+			timeInput.attr('value',realArg['time']['value'])
+				.attr('min',realArg['time']['min'])
+				.attr('max',realArg['time']['max'])
+				.attr('step',realArg['time']['step']);
+			*/
+			//var timeDom=timeInput[0][0];
+			setRange(timeInput,realArg['time']);
+				
+			diffSlider(timeInput,function(dt){
+				function callback(){
+					var err=stage.error();
+					errorText.text(err);
+					if(err<1e-2){
+						passCallback();
+					}
+				}
+				stage.run(dt,callback);		
+			})
 
-	/*
-	timeInput.on('change',function(){
-		var time=Number(timeInput[0][0].value);
-		function callback(){
-			var err=stage.error();
-			errorText.text(err);
+			stage=Stage(Field(argField),realArg);
 		}
-		stage.run(dt,callback);
-		//console.log(fit);
-	});
-	*/
-	
-	function setter(Stage,Field,realArg){
-		stage=Stage(Field(argField),realArg);
+		
+		setter(initStage,initField,initArg);
+		
+		return setter;
 	}
-	
-	setter(initStage,initField,initArg);
-	
-	return setter;
+	return gamePageInit;
 }
+
+
+
 
 // perherps time=0 is true answer but we can set min/max st it can't in mid loc to confuss player.
 //var stageFieldSetter=finalInit(stage1,field1,{k:{value:2},time:{value:5,min:-10,max:10,step:1}});
-var stageFieldSetter=finalInit(stage1,field2,{k:{value:2},time:{value:1,min:-10,max:10,step:1}});
-//var stageFieldSetter=finalInit(stage1,field3,{k:{value:2},time:{value:1,min:-10,max:10,step:1}});
+//var stageFieldSetter=finalInit(stage1,field2,{k:{value:2},time:{value:1,min:-10,max:10,step:1}});
+var stageFieldSetter=gamePageInitConfig(function(){
+	passCallback();
+});
+
+
+var gamePage=d3.select('#gamePage');
+var welcomePage= d3.select('#welcomePage');
+var jumpPage=d3.select('#jumpPage');
+var victoryPage=d3.select('#victoryPage');
+var flashDialog=d3.select('#flashDialog')
+
+var buttonStartGame=d3.select('#buttonStartGame')
+var buttonNextStage=d3.select('#buttonNextStage');
+var audio=d3.select('#audioDoom');
+var buttonReturn= d3.select('#buttonReturn');
+var gamePageHeader=d3.select('#gamePageHeader');
+var flashContent=d3.select('#flashContent');
+var flashButton=d3.select('#flashButton');
+
+
+function pageInit(){
+	
+	
+	function welcomePageInit(){
+		buttonStartGame.on('click',function(){
+			var stageRecord=nextStage();
+			
+			stageFieldSetter(stageRecord['stage'],stageRecord['field'],stageRecord['realArg']);
+			gamePageHeader.text(stageRecord['name']);
+			flashContent.text(stageRecord['flash']);
+
+			welcomePage.style('display','none');
+			gamePage.style('display','block');
+			flashDialog.style('display','block');
+		})
+	}
+
+	function jumpPageInit(){
+		buttonNextStage.on('click',function(){
+			jumpPage.style('display','none');
+			flashDialog.style('display','block');
+			gamePage.style('display','block');
+		})
+	}
+	
+	function victoryPageInit(){
+		buttonReturn.on('click',function(){
+			audio[0][0].play();
+		})
+	}
+	
+	flashButton.on('click',function(){
+		flashDialog.style('display','none');
+	});
+	
+	welcomePageInit();
+	jumpPageInit();
+	victoryPageInit();
+	
+	
+}
+
+
+//gamePage.style('display','block');
+
+
+
+
+function nextStageIteration(){
+	var i=0;
+	
+	var stageList=[
+		{stage:stage1,field:field1,realArg:{k:{value:2},time:{value:5,min:-10,max:10,step:1}},
+		name:"I'm circle I",flash:"I am a happy circle live in pixel kindom,but my shape is shifted by field! You can drag below time bar to middle to rollback and resume my pefect body."},
+		{stage:stage1,field:field2,realArg:{k:{value:2},time:{value:-8,min:-12,max:8,step:1}},
+		name:"I'm circle II",flash:"It's not middle loction again,find the proper location"},
+		{stage:stage1,field:field3,realArg:{k:{value:1},time:{value:1,min:-10,max:10,step:1}},
+		name:"I'm circle III",flash:"the field change! You can look stream plot to pick proper field rollback to a circle.Tip:it looks so big?"},
+		{stage:stage2,field:field4,realArg:{k:{value:3},time:{value:6,min:-10,max:10,step:1}},
+		name:"I'm ???",flash:"you can hit 'plot goal' to see you need to fit."},
+		{stage:stage3,field:field2,realArg:{k:{value:4},time:{value:4,min:-15,max:10,step:1}},
+		name:"I'm chiken",flash:"CHIKEN!"}
+	]
+	
+	//stageList=[stageList[4]]
+	
+	function _next(){
+		var r=stageList[i];
+		i+=1;
+		return r;
+	}
+	return _next;
+}
+
+var nextStage=nextStageIteration();
+
+function passCallback(){
+
+	var stageRecord=nextStage();
+	
+	flashDialog.style('display','none');
+	if (stageRecord){
+		gamePage.style('display','none');
+		jumpPage.style('display','block');
+
+		stageFieldSetter(stageRecord['stage'],stageRecord['field'],stageRecord['realArg']);
+		gamePageHeader.text(stageRecord['name']);
+		flashContent.text(stageRecord['flash']);
+	}
+	else{
+		gamePage.style('display','none');
+		jumpPage.style('display','block');
+		buttonNextStage.on('click',function(){
+		jumpPage.style('display','none');
+		victoryPage.style('display','block');
+		})
+	}
+}
+
+pageInit();
+
+welcomePage.style('display','block');
